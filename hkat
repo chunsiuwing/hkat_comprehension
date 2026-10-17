@@ -1,0 +1,873 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  BookOpen, 
+  FileText, 
+  UploadCloud, 
+  Database, 
+  Layers, 
+  CheckCircle2, 
+  AlertCircle, 
+  RefreshCw, 
+  Download, 
+  Copy, 
+  Sparkles, 
+  Sliders, 
+  HelpCircle, 
+  Eye, 
+  Check, 
+  Trash2, 
+  FileCheck, 
+  GraduationCap, 
+  ArrowRight,
+  Printer,
+  ChevronRight,
+  ListOrdered,
+  Search,
+  Tag
+} from 'lucide-react';
+
+// --- MOCK DATABASE INITIAL STATE ---
+const INITIAL_SAMPLES = [
+  { id: '1', name: '2024_HKAT_P6_Mock_Set1.pdf', level: 'P6', genre: 'Narrative', size: '2.4 MB', chunks: 28, uploaded: '2026-03-12', status: 'Indexed' },
+  { id: '2', name: 'HKAT_P5_Reading_Passages.pdf', level: 'P5', genre: 'Information Text', size: '1.8 MB', chunks: 22, uploaded: '2026-03-10', status: 'Indexed' },
+  { id: '3', name: 'Primary_4_Attainment_Practice.pdf', level: 'P4', genre: 'Practical Text', size: '3.1 MB', chunks: 34, uploaded: '2026-02-28', status: 'Indexed' },
+  { id: '4', name: 'P6_Speech_and_Notices_Exam.pdf', level: 'P6', genre: 'Speech / Notice', size: '1.2 MB', chunks: 16, uploaded: '2026-02-15', status: 'Indexed' },
+];
+
+const PRESET_TOPICS = [
+  "An Exciting Science Fair at School",
+  "Saving Marine Life in Hong Kong",
+  "A Trip to Hong Kong Wetland Park",
+  "An Unforgettable Eco-Tour in Lantau",
+  "A Robot Companion for Elderly Citizens"
+];
+
+const QUESTION_TYPES = [
+  { id: 'cloze', label: 'Cloze passage', desc: 'Fill in missing vocabulary & connectors in context', badge: 'Vocabulary & Grammar' },
+  { id: 'sequencing', label: 'Sequencing', desc: 'Order events chronologically (1 to 4)', badge: 'Logic & Flow' },
+  { id: 'true_false', label: 'True / Not True', desc: 'Evaluate factual accuracy based on passage detail', badge: 'Detail Verification' },
+  { id: 'referencing', label: 'Referencing', desc: 'Identify pronoun/noun targets (e.g. Line 12 "it")', badge: 'Cohesion' },
+  { id: 'keywords', label: 'Keywords & Connection', desc: 'Identify logical connectors (However, Therefore)', badge: 'Structure' },
+  { id: 'unfamiliar_words', label: 'Unfamiliar Words', desc: 'Contextual vocabulary guessing with line references', badge: 'Context Clues' },
+];
+
+export default function HKATGeneratorApp() {
+  const [activeTab, setActiveTab] = useState('generator'); // 'generator' | 'knowledge_base' | 'history'
+
+  // --- FORM STATE ---
+  const [topic, setTopic] = useState("Saving Marine Life in Hong Kong");
+  const [genre, setGenre] = useState("Information Text");
+  const [level, setLevel] = useState("P6");
+  const [wordCount, setWordCount] = useState(280);
+  const [questionCount, setQuestionCount] = useState(5);
+  const [selectedTypes, setSelectedTypes] = useState(['referencing', 'unfamiliar_words', 'sequencing', 'true_false', 'keywords']);
+
+  // --- GENERATION STATE ---
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generatedPaper, setGeneratedPaper] = useState(null);
+  const [showAnswerKey, setShowAnswerKey] = useState(true);
+  const [outputTab, setOutputTab] = useState('paper'); // 'paper' | 'marking_scheme'
+  const [copied, setCopied] = useState(false);
+
+  // --- KNOWLEDGE BASE STATE ---
+  const [samples, setSamples] = useState(INITIAL_SAMPLES);
+  const [dragActive, setDragActive] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  // Default initial generation preview on load
+  useEffect(() => {
+    generateMockResult();
+  }, []);
+
+  const toggleQuestionType = (id) => {
+    if (selectedTypes.includes(id)) {
+      if (selectedTypes.length > 1) {
+        setSelectedTypes(selectedTypes.filter(t => t !== id));
+      }
+    } else {
+      setSelectedTypes([...selectedTypes, id]);
+    }
+  };
+
+  const handleFileUpload = (files) => {
+    const fileList = Array.from(files);
+    fileList.forEach(file => {
+      const newSample = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+        name: file.name,
+        level: level,
+        genre: genre,
+        size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+        chunks: Math.floor(Math.random() * 15) + 12,
+        uploaded: new Date().toISOString().split('T')[0],
+        status: 'Indexed'
+      };
+      setSamples(prev => [newSample, ...prev]);
+    });
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files);
+    }
+  };
+
+  const generateMockResult = () => {
+    setIsGenerating(true);
+    setGenerationProgress(15);
+
+    const timer1 = setTimeout(() => setGenerationProgress(45), 400);
+    const timer2 = setTimeout(() => setGenerationProgress(80), 800);
+
+    const timer3 = setTimeout(() => {
+      setGenerationProgress(100);
+      setIsGenerating(false);
+
+      const paper = {
+        id: 'HKAT-' + Date.now().toString().slice(-6),
+        title: topic,
+        level: level,
+        genre: genre,
+        wordCount: wordCount,
+        generatedAt: new Date().toLocaleString(),
+        passageLines: [
+          { lineNo: 1, text: "Hong Kong is renowned for its vibrant harbour and rich marine biodiversity, but beneath the surface," },
+          { lineNo: 2, text: "our ocean life faces severe challenges from pollution and coastal development. Plastic debris," },
+          { lineNo: 3, text: "chemical runoff, and discarded fishing nets pose ongoing threats to iconic local species such as" },
+          { lineNo: 4, text: "the Chinese white dolphin and green sea turtles." },
+          { lineNo: 5, text: "To tackle these environmental issues, local conservationists and marine biologists have launched", isMarker: true },
+          { lineNo: 6, text: "several innovative restoration initiatives. One notable project involves deploying 3D-printed tile structures" },
+          { lineNo: 7, text: "along degraded seabeds. These terracotta tiles provide artificial micro-habitats where young corals" },
+          { lineNo: 8, text: "can easily attach and thrive, accelerating reef regeneration by up to three times normal rates." },
+          { lineNo: 9, text: "Furthermore, primary school students across the territory are participating in coastal clean-ups and" },
+          { lineNo: 10, text: "community education drives. By collecting beach litter and recording data, these young ambassadors", isMarker: true },
+          { lineNo: 11, text: "help scientists track pollution sources. Environmentalists believe that early hands-on involvement" },
+          { lineNo: 12, text: "nurtures lifelong ecological empathy. Ultimately, saving Hong Kong's marine habitats relies not only" },
+          { lineNo: 13, text: "on technological breakthroughs, but also on the collective responsibility of every citizen." }
+        ],
+        questions: [
+          {
+            num: 1,
+            type: 'unfamiliar_words',
+            typeName: 'Unfamiliar Words',
+            question: "In line 12, what does the word 'empathy' most closely mean?",
+            options: [
+              "A. Complete ignorance towards local wildlife",
+              "B. The ability to understand and care about nature",
+              "C. Fear of swimming in deep seawater",
+              "D. Scientific skill in building artificial coral reefs"
+            ],
+            answer: "B",
+            lineRef: 12,
+            explanation: "The text states that early involvement 'nurtures lifelong ecological empathy', showing it refers to understanding and caring about marine habitats."
+          },
+          {
+            num: 2,
+            type: 'referencing',
+            typeName: 'Referencing',
+            question: "In line 10, what does the phrase 'these young ambassadors' refer to?",
+            options: [
+              "A. Professional marine biologists",
+              "B. The Chinese white dolphins",
+              "C. Primary school students participating in clean-ups",
+              "D. Government environmental officials"
+            ],
+            answer: "C",
+            lineRef: 10,
+            explanation: "'These young ambassadors' in line 10 replaces 'primary school students' mentioned in line 9."
+          },
+          {
+            num: 3,
+            type: 'true_false',
+            typeName: 'True / Not True',
+            question: "According to the passage, which statement is NOT true about the terracotta tiles?",
+            options: [
+              "A. They are created using 3D printing technology.",
+              "B. They slow down reef regeneration process.",
+              "C. They are placed along degraded seabeds.",
+              "D. They help young corals attach and grow."
+            ],
+            answer: "B",
+            lineRef: 8,
+            explanation: "Line 8 explicitly mentions that the tiles 'accelerate reef regeneration by up to three times', so statement B is false."
+          },
+          {
+            num: 4,
+            type: 'sequencing',
+            typeName: 'Sequencing',
+            question: "Order the following events according to the passage (1 - 4):",
+            subItems: [
+              "(  ) Artificial terracotta tiles are deployed underwater.",
+              "(  ) Students record data on beach litter.",
+              "(  ) Local ocean life faces threats from plastic debris.",
+              "(  ) Corals attach to 3D-printed structures and grow rapidly."
+            ],
+            options: [
+              "A. 2 → 4 → 1 → 3",
+              "B. 3 → 1 → 4 → 2",
+              "C. 1 → 3 → 2 → 4",
+              "D. 3 → 2 → 1 → 4"
+            ],
+            answer: "B",
+            lineRef: "Passage Overall",
+            explanation: "Event 3 occurs in paragraph 1 (threats), Event 1 occurs in paragraph 2 (deploying tiles), Event 4 follows in paragraph 2 (corals grow), and Event 2 occurs in paragraph 3 (students record data)."
+          },
+          {
+            num: 5,
+            type: 'keywords',
+            typeName: 'Keywords & Connection',
+            question: "In line 12, the word 'Ultimately' is used to...",
+            options: [
+              "A. introduce a contrasting argument",
+              "B. summarize the main conclusion of the passage",
+              "C. describe a historical event that occurred long ago",
+              "D. give a specific example of marine pollution"
+            ],
+            answer: "B",
+            lineRef: 12,
+            explanation: "'Ultimately' serves as a logical connector that leads to the author's final conclusion in the closing paragraph."
+          }
+        ]
+      };
+
+      setGeneratedPaper(paper);
+      setHistory(prev => [paper, ...prev.slice(0, 9)]);
+    }, 1200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  };
+
+  const copyToClipboard = () => {
+    if (!generatedPaper) return;
+    const passageContent = generatedPaper.passageLines.map(l => l.text).join('\n');
+    const questionsContent = generatedPaper.questions.map(q => 
+      `Q${q.num}. [${q.typeName}] ${q.question}\n` + 
+      (q.options ? q.options.join('\n') + '\n' : '') +
+      `Answer: ${q.answer} (${q.explanation})\n`
+    ).join('\n');
+
+    const fullText = `HKAT COMPREHENSION PRACTICE (${generatedPaper.level}) - ${generatedPaper.title}\n\nPASSAGE:\n${passageContent}\n\nQUESTIONS:\n${questionsContent}`;
+    
+    // Fallback standard copy logic
+    const el = document.createElement('textarea');
+    el.value = fullText;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const totalChunks = samples.reduce((acc, s) => acc + s.chunks, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
+      {/* --- TOP HEADER BAR --- */}
+      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-indigo-600/20 text-indigo-400 p-2 rounded-xl border border-indigo-500/30">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg text-slate-100 leading-snug flex items-center gap-2">
+              HKAT Exam Generator <span className="bg-indigo-500/10 text-indigo-400 text-xs px-2 py-0.5 rounded-full border border-indigo-500/20 font-medium">Primary English</span>
+            </h1>
+            <p className="text-xs text-slate-400">Hong Kong Attainment Test RAG Question Generator</p>
+          </div>
+        </div>
+
+        {/* --- NAVIGATION TABS --- */}
+        <nav className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setActiveTab('generator')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'generator'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Generator</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('knowledge_base')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'knowledge_base'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Database className="w-4 h-4" />
+            <span>Knowledge Base</span>
+            <span className="bg-slate-800 text-indigo-300 text-xs px-1.5 py-0.5 rounded-full border border-slate-700">
+              {samples.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'history'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>History</span>
+          </button>
+        </nav>
+      </header>
+
+      {/* --- MAIN CONTENT AREA --- */}
+      <main className="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto">
+        {/* ================= TAB 1: GENERATOR ================= */}
+        {activeTab === 'generator' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* LEFT INPUT FORM (5 COLUMNS) */}
+            <div className="lg:col-span-5 space-y-5 bg-slate-950/60 p-5 rounded-2xl border border-slate-800/80 shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h2 className="font-semibold text-slate-200 flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-indigo-400" />
+                  Paper Constraints & Setup
+                </h2>
+                <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> RAG Database Active
+                </span>
+              </div>
+
+              {/* TOPIC INPUT WITH PRESETS */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Passage Theme / Topic</label>
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. Hong Kong Wetland Park Eco Tour"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {PRESET_TOPICS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setTopic(preset)}
+                      className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-800 transition"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* LEVEL & GENRE ROW */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* LEVEL SELECTOR */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">Target Level</label>
+                  <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                    {['P4', 'P5', 'P6'].map((lvl) => (
+                      <button
+                        key={lvl}
+                        onClick={() => setLevel(lvl)}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition ${
+                          level === lvl
+                            ? 'bg-indigo-600 text-white shadow'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* GENRE SELECTOR */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-1.5">Text Genre</label>
+                  <select
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="Narrative">Narrative Story</option>
+                    <option value="Information Text">Information Text</option>
+                    <option value="Practical Text">Practical Text (Email/Letter)</option>
+                    <option value="Speech / Notice">Speech / Notice / Leaflet</option>
+                    <option value="Conversation">Conversation / Interview</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* SLIDERS FOR WORD COUNT & QUESTION COUNT */}
+              <div className="space-y-4 pt-1">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Word Length</label>
+                    <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
+                      {wordCount} words
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="150"
+                    max="400"
+                    step="10"
+                    value={wordCount}
+                    onChange={(e) => setWordCount(Number(e.target.value))}
+                    className="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>150w (P4)</span>
+                    <span>280w (P5)</span>
+                    <span>400w (P6)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Number of Questions</label>
+                    <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
+                      {questionCount} Questions
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="3"
+                    max="10"
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value))}
+                    className="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* HKAT QUESTION TYPE CHECKBOXES */}
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                  HKAT Question Types <span className="text-indigo-400">({selectedTypes.length} selected)</span>
+                </label>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                  {QUESTION_TYPES.map((type) => {
+                    const isChecked = selectedTypes.includes(type.id);
+                    return (
+                      <div
+                        key={type.id}
+                        onClick={() => toggleQuestionType(type.id)}
+                        className={`p-2.5 rounded-xl border transition cursor-pointer flex items-start space-x-3 ${
+                          isChecked
+                            ? 'bg-indigo-950/40 border-indigo-500/50 text-slate-100'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition ${
+                          isChecked ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 bg-slate-950'
+                        }`}>
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-200">{type.label}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                              {type.badge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">{type.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* GENERATE ACTION BUTTON */}
+              <button
+                onClick={generateMockResult}
+                disabled={isGenerating}
+                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Analyzing RAG Samples & Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Generate HKAT Exam Paper</span>
+                  </>
+                )}
+              </button>
+
+              {/* PROGRESS BAR */}
+              {isGenerating && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div
+                      className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full transition-all duration-300 rounded-full"
+                      style={{ width: `${generationProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>Searching vector database...</span>
+                    <span>{generationProgress}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT OUTPUT DISPLAY (7 COLUMNS) */}
+            <div className="lg:col-span-7 flex flex-col bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-xl overflow-hidden min-h-[600px]">
+              {generatedPaper ? (
+                <>
+                  {/* OUTPUT HEADER BAR */}
+                  <div className="border-b border-slate-800 bg-slate-900/80 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-indigo-500/20 text-indigo-300 font-bold text-xs px-2 py-0.5 rounded border border-indigo-500/30">
+                          {generatedPaper.level}
+                        </span>
+                        <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded border border-slate-700">
+                          {generatedPaper.genre}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          ~{generatedPaper.wordCount} words
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-slate-100 mt-1">
+                        {generatedPaper.title}
+                      </h3>
+                    </div>
+
+                    {/* ACTION BUTTONS */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setShowAnswerKey(!showAnswerKey)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border font-medium flex items-center space-x-1.5 transition ${
+                          showAnswerKey
+                            ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                            : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{showAnswerKey ? 'Answer Key ON' : 'Show Answers'}</span>
+                      </button>
+
+                      <button
+                        onClick={copyToClipboard}
+                        className="text-xs px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg font-medium flex items-center space-x-1.5 transition"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copied ? 'Copied!' : 'Copy'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => window.print()}
+                        className="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium flex items-center space-x-1.5 shadow transition"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PAPER / MARKING SCHEME DISPLAY TABS */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar bg-slate-950/40">
+                    
+                    {/* PASSAGE SECTION WITH HKAT LINE NUMBERS */}
+                    <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                          <BookOpen className="w-4 h-4" /> Reading Passage
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          HKAT Standard Format (Line Markers Every 5 Lines)
+                        </span>
+                      </div>
+
+                      <div className="font-serif text-slate-200 leading-relaxed text-sm space-y-2">
+                        {generatedPaper.passageLines.map((line, i) => (
+                          <div key={i} className="flex items-baseline space-x-3">
+                            <span className="w-12 text-right font-mono text-[11px] text-slate-500 select-none">
+                              {line.isMarker ? `Line ${line.lineNo}` : ''}
+                            </span>
+                            <p className="flex-1 text-slate-200">{line.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* QUESTIONS SECTION */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                          <HelpCircle className="w-4 h-4" /> Comprehension Questions ({generatedPaper.questions.length})
+                        </h4>
+                      </div>
+
+                      {generatedPaper.questions.map((q) => (
+                        <div key={q.num} className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start space-x-2">
+                              <span className="font-bold text-sm text-indigo-400 min-w-[24px]">Q{q.num}.</span>
+                              <span className="text-sm font-medium text-slate-100">{q.question}</span>
+                            </div>
+                            <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded whitespace-nowrap">
+                              {q.typeName}
+                            </span>
+                          </div>
+
+                          {/* SUBITEMS (Sequencing) */}
+                          {q.subItems && (
+                            <div className="pl-8 space-y-1 text-xs text-slate-300 font-mono bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+                              {q.subItems.map((item, idx) => (
+                                <div key={idx}>{item}</div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* OPTIONS GRID */}
+                          {q.options && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7 pt-1">
+                              {q.options.map((opt, idx) => {
+                                const isCorrect = showAnswerKey && opt.startsWith(q.answer);
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`text-xs p-2 rounded-lg border transition ${
+                                      isCorrect
+                                        ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200 font-medium'
+                                        : 'bg-slate-950/40 border-slate-800/80 text-slate-300'
+                                    }`}
+                                  >
+                                    {opt}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* MARKING SCHEME / EXPLANATION CARD */}
+                          {showAnswerKey && (
+                            <div className="mt-3 pl-7 text-xs bg-emerald-950/20 border border-emerald-500/20 rounded-lg p-3 space-y-1">
+                              <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Correct Answer: {q.answer}</span>
+                                {q.lineRef && (
+                                  <span className="text-[10px] text-slate-400 font-normal">
+                                    (Reference: {typeof q.lineRef === 'number' ? `Line ${q.lineRef}` : q.lineRef})
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-slate-300 text-[11px] leading-relaxed">
+                                <strong className="text-slate-400">HKAT Marking Logic:</strong> {q.explanation}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
+                  <BookOpen className="w-12 h-12 mb-3 stroke-1 text-slate-600" />
+                  <p className="text-sm font-medium">No exam paper generated yet.</p>
+                  <p className="text-xs text-slate-600 max-w-sm mt-1">Configure your target level, topic, and question options on the left to create a customized HKAT practice set.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: KNOWLEDGE BASE (RAG PDF MAINTENANCE) ================= */}
+        {activeTab === 'knowledge_base' && (
+          <div className="space-y-6">
+            
+            {/* METRICS SUMMARY ROW */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+                <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
+                  <Database className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">Total Sample Papers</p>
+                  <p className="text-xl font-bold text-slate-100">{samples.length} Files</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+                <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                  <Layers className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">Vector Chunks Indexed</p>
+                  <p className="text-xl font-bold text-slate-100">{totalChunks} Chunks</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+                <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+                  <Tag className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">Levels Covered</p>
+                  <p className="text-xl font-bold text-slate-100">P4, P5, P6</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+                <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+                  <FileCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-semibold">Embedding Model</p>
+                  <p className="text-xs font-bold text-slate-200 mt-1">OpenAI text-embedding-3</p>
+                </div>
+              </div>
+            </div>
+
+            {/* FILE UPLOAD DROPZONE */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition flex flex-col items-center justify-center space-y-3 cursor-pointer ${
+                dragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
+              }`}
+            >
+              <div className="p-4 bg-indigo-600/10 text-indigo-400 rounded-full border border-indigo-500/20">
+                <UploadCloud className="w-8 h-8" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-200">Drag & Drop Sample HKAT PDF Files Here</p>
+                <p className="text-xs text-slate-400 mt-1">Uploaded PDFs are automatically chunked and indexed into the RAG vector store</p>
+              </div>
+              <label className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer">
+                Browse PDF Files
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                />
+              </label>
+            </div>
+
+            {/* SAMPLE FILES TABLE */}
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-400" /> Uploaded HKAT Sample Documents
+                </h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                    <tr>
+                      <th className="px-4 py-3">File Name</th>
+                      <th className="px-4 py-3">Target Level</th>
+                      <th className="px-4 py-3">Genre</th>
+                      <th className="px-4 py-3">Size</th>
+                      <th className="px-4 py-3">Extracted Chunks</th>
+                      <th className="px-4 py-3">Upload Date</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {samples.map((file) => (
+                      <tr key={file.id} className="hover:bg-slate-900/40 transition">
+                        <td className="px-4 py-3 font-medium text-slate-100 flex items-center space-x-2">
+                          <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <span className="truncate max-w-xs">{file.name}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded font-bold border border-indigo-500/20">
+                            {file.level}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400">{file.genre}</td>
+                        <td className="px-4 py-3 text-slate-400">{file.size}</td>
+                        <td className="px-4 py-3 text-slate-200 font-mono">{file.chunks} chunks</td>
+                        <td className="px-4 py-3 text-slate-400">{file.uploaded}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center space-x-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 text-[10px]">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{file.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setSamples(samples.filter(s => s.id !== file.id))}
+                            className="text-slate-500 hover:text-red-400 transition p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 3: PAPER HISTORY ================= */}
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4">
+              <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-indigo-400" /> Previously Generated Exam Papers
+              </h3>
+
+              {history.length > 0 ? (
+                <div className="space-y-2">
+                  {history.map((paper, idx) => (
+                    <div key={idx} className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between hover:border-slate-700 transition">
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-indigo-500/20 text-indigo-300 font-bold text-xs px-2 py-0.5 rounded border border-indigo-500/30">
+                            {paper.level}
+                          </span>
+                          <span className="text-xs text-slate-400">{paper.genre}</span>
+                          <span className="text-xs text-slate-500">• {paper.generatedAt}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-100">{paper.title}</h4>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setGeneratedPaper(paper);
+                          setActiveTab('generator');
+                        }}
+                        className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg flex items-center space-x-1 transition"
+                      >
+                        <span>Load Paper</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-500 text-xs">
+                  No generation history available. Generated papers will automatically appear here.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
